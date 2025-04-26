@@ -7,7 +7,8 @@ typedef struct JSON JSON;
 enum Status {
     SUCCESS,
     FILE_NULL,
-    FILE_ACCESS_ERROR
+    FILE_ACCESS_ERROR,
+	FILE_READ_ERROR,
 };
 
 typedef struct ErrorInfo {

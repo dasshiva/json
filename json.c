@@ -2,13 +2,17 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 static const char* e2s[] = {
-    "Success"
+    "Success",
     "File argument to ParseJSON() is NULL",
     "Cannot access the JSON file",
+	"Failed to read from file, possible file corruption",
     NULL
 };
+
+#define FILE_EOF (-1)
 
 // Implements RFC 8259
 typedef struct PrimitiveNode {
@@ -55,18 +59,57 @@ typedef struct Node {
 } Node;
 
 typedef struct JSON {
-    const char*  name;   // Filename from where JSON has been parsed from
-    FILE*  handle; // Handle from which file is read
-    Node** nodes;  // Data in the JSON file
+    const char*  name; // Filename from where JSON has been parsed from
+    FILE*  handle;     // Handle from which file is read
+	uint32_t offset;   // Offset into the file (in bytes)
+	uint32_t line;     // Line number in the file
+    Node** nodes;      // Data in the JSON file
 } JSON;
+
+
+static int Next(JSON* json) {
+	int ch = 0;
+	if (fread(&ch, 1, 1, json->handle) != 1) {
+		if (feof(json->handle))
+			return FILE_EOF;
+		else
+			return FILE_READ_ERROR;
+	}
+
+	if (ch == '\n')
+		json->line++;
+
+	json->offset++;
+	return ch;
+}
+
+static inline void PutBack(JSON* json, int ch) {
+	if (ch == FILE_EOF)
+		return;
+
+	json->offset--;
+	ungetc(ch, json->handle);
+}
+
+
+static void SkipSpace(JSON* json) {
+	while (1) {
+		int ch = Next(json);
+		if (!isspace(ch)) {
+			PutBack(json, ch);
+			break;
+		}
+	}
+}
+
+static int ParseValue(JSON* json) {
+	return FILE_EOF;
+}
 
 JSON* ParseJSON(const char* file, ErrorInfo* err) {
     JSON* json = NULL;
-    if (!err) {
-        err = malloc(sizeof(ErrorInfo));
-        if (!err)
-            return NULL;
-    }
+    if (!err) 
+        return NULL;
 
     err->message = NULL;
     err->line = 1;
@@ -90,5 +133,21 @@ JSON* ParseJSON(const char* file, ErrorInfo* err) {
     json->handle = handle;
     json->nodes = NULL;
 
+	// json ::= ws value ws
+	while (1) {
+		SkipSpace(json);
+		int status = ParseValue(json);
+		if (status > 0) {
+			err->line = json->line;
+			err->type = status;
+			err->message = e2s[err->type];
+			free(json);
+			return NULL;
+		}
+
+		if (status == FILE_EOF)
+			break;
+		SkipSpace(json);
+	}
     return json;
 }
