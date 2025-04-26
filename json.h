@@ -4,9 +4,16 @@
 struct JSON;
 typedef struct JSON JSON;
 
+enum Status {
+    SUCCESS,
+    FILE_NULL,
+    FILE_ACCESS_ERROR
+};
+
 typedef struct ErrorInfo {
     const char* message;
     int line;
+    int type;
 } ErrorInfo; 
 
 JSON* ParseJSON(const char* file, ErrorInfo* err);

@@ -1,5 +1,14 @@
+#include "json.h"
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+
+static const char* e2s[] = {
+    "Success"
+    "File argument to ParseJSON() is NULL",
+    "Cannot access the JSON file",
+    NULL
+};
 
 // Implements RFC 8259
 typedef struct PrimitiveNode {
@@ -15,19 +24,19 @@ typedef struct PrimitiveNode {
 struct Node;
 typedef struct ArrayNode {
     uint64_t len;
-    Node**   elems;
+    struct Node**   elems;
 } ArrayNode;
 
 
 typedef struct KeyValuePair {
     char* key;
-    Node* value;
+    struct Node* value;
 } KeyValuePair;
 
-typedef struct ContainerNode {
+typedef struct ObjectNode {
     uint64_t       len;
     KeyValuePair** fields; 
-} ContainerNode;
+} ObjectNode;
 
 typedef struct ContainerNode {
     union {
@@ -43,9 +52,43 @@ typedef struct Node {
         ContainerNode* cnode;
     };
     int type;
-};
+} Node;
 
 typedef struct JSON {
-    char*  name; // Filename from where JSON has been parsed from
-    Node** nodes; // Data in the JSON file
+    const char*  name;   // Filename from where JSON has been parsed from
+    FILE*  handle; // Handle from which file is read
+    Node** nodes;  // Data in the JSON file
 } JSON;
+
+JSON* ParseJSON(const char* file, ErrorInfo* err) {
+    JSON* json = NULL;
+    if (!err) {
+        err = malloc(sizeof(ErrorInfo));
+        if (!err)
+            return NULL;
+    }
+
+    err->message = NULL;
+    err->line = 1;
+    err->type = SUCCESS;
+
+    if (!file) {
+        err->type = FILE_NULL;
+        err->message = e2s[FILE_NULL];
+        return json;
+    }
+
+    FILE* handle = fopen(file, "r");
+    if (!handle) {
+        err->type = FILE_ACCESS_ERROR;
+        err->message = e2s[FILE_ACCESS_ERROR];
+        return json;
+    }
+
+    json = malloc(sizeof(JSON));
+    json->name = file;
+    json->handle = handle;
+    json->nodes = NULL;
+
+    return json;
+}
