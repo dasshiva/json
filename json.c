@@ -128,6 +128,15 @@ static void SkipSpace(JSON* json) {
 		}
 	}
 }
+
+static int ParseTrue(JSON* json);
+static int ParseFalse(JSON* json);
+static int ParseNull(JSON* json);
+static int ParseNumber(JSON* json, int mult);
+static int ParseString(JSON* json);
+static int ParseArray(JSON* json);
+static int ParseObject(JSON* json);
+
 /*
  * value = false / null / true / object / array / number / string
  */
@@ -137,7 +146,22 @@ static int ParseValue(JSON* json) {
 	if (ch == FILE_EOF)
 		return ch;
 
-	return UNK_TOKEN;
+	if (ch >= '0' && ch <= '9') {
+		PutBack(json, ch);
+		return ParseNumber(json, 1);
+	}
+
+	switch (ch) {
+		case 't' : return ParseTrue(json);
+		case 'f' : return ParseFalse(json);
+		case 'n' : return ParseNull(json);
+		case '-' : return ParseNumber(json, -1);
+		case '\'' : case '"': 
+			return ParseString(json);
+		case '[' : return ParseArray(json);
+		case '{' : return ParseObject(json);
+		default: return UNK_TOKEN;
+	};
 }
 
 JSON* ParseJSON(const char* file, ErrorInfo* err) {
