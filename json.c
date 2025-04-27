@@ -63,11 +63,19 @@ typedef struct JSON {
 	uint32_t offset;   // Offset into the file (in bytes)
 	uint32_t line;     // Line number in the file
     Node** nodes;      // Data in the JSON file
+	char   PbBuf[16];  // Buffer to putback tokens to
+	int    PbLen;      // Currently consumed length of PbBuf 
 } JSON;
 
 
 static int Next(JSON* json) {
 	int ch = 0;
+	if (PbLen != 0) {
+		ch = json->PbBuf[json->PbLen - 1];
+		json->PbLen--;
+		return ch;
+	}
+
 	if (fread(&ch, 1, 1, json->handle) != 1) {
 		if (feof(json->handle))
 			return FILE_EOF;
@@ -86,8 +94,14 @@ static inline void PutBack(JSON* json, int ch) {
 	if (ch == FILE_EOF)
 		return;
 
+	if (json->PbLen > 16) {
+		printf("Internal Error: PutBack buffer length exceeded\n");
+		return;
+	}
+
 	json->offset--;
-	ungetc(ch, json->handle);
+	json->PbBuf[json->PbLen - 1] = ch;
+	json->PbLen += 1;
 }
 
 /*ws = *(
