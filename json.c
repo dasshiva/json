@@ -8,6 +8,7 @@ static const char* e2s[] = {
     "File argument to ParseJSON() is NULL",
     "Cannot access the JSON file",
 	"Failed to read from file, possible file corruption",
+	"Token not expected",
     NULL
 };
 
@@ -131,8 +132,12 @@ static void SkipSpace(JSON* json) {
  * value = false / null / true / object / array / number / string
  */
 static int ParseValue(JSON* json) {
+	// EOF can only be the first character in the stream after a space
+	int ch = Next(json);
+	if (ch == FILE_EOF)
+		return ch;
 
-	return FILE_EOF;
+	return UNK_TOKEN;
 }
 
 JSON* ParseJSON(const char* file, ErrorInfo* err) {

@@ -9,6 +9,7 @@ enum Status {
     FILE_NULL,
     FILE_ACCESS_ERROR,
 	FILE_READ_ERROR,
+	UNK_TOKEN
 };
 
 typedef struct ErrorInfo {
