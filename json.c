@@ -70,7 +70,7 @@ typedef struct JSON {
 
 static int Next(JSON* json) {
 	int ch = 0;
-	if (PbLen != 0) {
+	if (json->PbLen != 0) {
 		ch = json->PbBuf[json->PbLen - 1];
 		json->PbLen--;
 		return ch;
@@ -113,6 +113,7 @@ int IsSpace(int ch) {
     switch (ch) {
         case 0x20: case 0x09: case 0x0A: case 0x0D: return 1;
         default: return 0;
+	}
 }
 
 static void SkipSpace(JSON* json) {
