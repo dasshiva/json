@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <ctype.h>
 
 static const char* e2s[] = {
     "Success",
@@ -91,18 +90,33 @@ static inline void PutBack(JSON* json, int ch) {
 	ungetc(ch, json->handle);
 }
 
+/*ws = *(
+ %x20 / ; Space
+ %x09 / ; Horizontal tab
+ %x0A / ; Line feed or New line
+ %x0D ) */
+int IsSpace(int ch) {
+    switch (ch) {
+        case 0x20: case 0x09: case 0x0A: case 0x0D: return 1;
+        default: return 0;
+}
 
 static void SkipSpace(JSON* json) {
 	while (1) {
 		int ch = Next(json);
-		if (!isspace(ch)) {
+        // We could have used isspace here but not all systems have a
+        // implementation of isspace() that is suitable for our purposes
+		if (!IsSpace(ch)) {
 			PutBack(json, ch);
 			break;
 		}
 	}
 }
-
+/*
+ * value = false / null / true / object / array / number / string
+ */
 static int ParseValue(JSON* json) {
+
 	return FILE_EOF;
 }
 
